@@ -1,12 +1,14 @@
 #!/bin/bash
+    # --rm \
 
 
 docker run \
-    --rm \
     -it \
-    --name nova_carter_demo \
+    --name nova_carter_demo_v2 \
     --device /dev/snd \
     --network host \
-    -v $(pwd):/nova_carter_demo \
-    -w /nova_carter_demo \
+    --runtime nvidia \
+    -v $(pwd):/remembr \
+    --device=/dev/video0:/dev/video0 \
+    -w /remembr/examples/nova_carter_demo \
     nova_carter_demo:l4t

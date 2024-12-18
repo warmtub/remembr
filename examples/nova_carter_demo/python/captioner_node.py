@@ -5,7 +5,7 @@ import time
 from threading import Thread
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from cv_bridge import CvBridge
 from nano_llm import NanoLLM, ChatHistory
 from dataclasses import dataclass
@@ -19,14 +19,20 @@ class CaptionerNode(Node):
         super().__init__("CaptionerNode")
 
         self.declare_parameter("model", "Efficient-Large-Model/VILA1.5-3B")
-        self.declare_parameter("image_topic", "/front_stereo_camera/left/image_raw")
+        # self.declare_parameter("image_topic", "/front_stereo_camera/left/image_raw")
+        self.declare_parameter("image_topic", "/webcam_image")
         self.declare_parameter("caption_topic", "/caption")
+        self.declare_parameter("caption_pose_topic", "/caption_pose")
+        # self.declare_parameter(
+        #     "prompt",
+        #     "<video> Please describe in detail what you see in the few seconds of " + \
+        #     "the video. Specifically focus on the people, objects, environmental " + \
+        #     "features, events/ectivities, signs, use of each room, and other interesting details. " + \
+        #     "Think step by step about these details and be very specific."
+        # )
         self.declare_parameter(
             "prompt",
-            "<video> Please describe in detail what you see in the few seconds of " + \
-            "the video. Specifically focus on the people, objects, environmental " + \
-            "features, events/ectivities, and other interesting details. Think step " + \
-            "by step about these details and be very specific."
+            "<video> This video shows a clock. Please describe what time is it."
         )
         self.declare_parameter("use_every_nth_image", 15)
         self.declare_parameter("caption_image_count", 6)
@@ -36,13 +42,19 @@ class CaptionerNode(Node):
             Image,
             self.get_parameter("image_topic").value,
             self.image_callback,
-            10
+            1
         )
 
         self.caption_publisher = self.create_publisher(
             String, 
             self.get_parameter("caption_topic").value,
             10
+        )
+
+        self.caption_pose_publisher = self.create_publisher(
+            Bool, 
+            self.get_parameter("caption_pose_topic").value,
+            1
         )
 
         self.debug = False
@@ -67,12 +79,14 @@ class CaptionerNode(Node):
         self.logger = self.get_logger()
 
     def start_caption_loop(self):
+
         self.caption_loop_running = True
         thread = Thread(target=self.caption_loop)
         thread.start()
         self.caption_loop_thread = thread
 
     def stop_caption_loop(self):
+
         self.caption_loop_running = False
         self.caption_loop_thread.join()
         self.caption_loop_thread = None
@@ -94,6 +108,7 @@ class CaptionerNode(Node):
             if len(images) < self.caption_image_count:
                 self.logger.info("Skipped image captioning for current time window.  No images available in buffer.")
             else:
+                self.publish_caption_pose(True)
                 caption = self.caption_images(images)
                 self.logger.info(f"Generated caption using {len(images)} images.")
                 self.publish_caption(caption)
@@ -104,7 +119,7 @@ class CaptionerNode(Node):
     def image_callback(self, image_msg: Image):
         
         if self.image_counter % self.use_every_nth_image == 0:
-            self.logger.info("Received image.")
+            self.logger.info(f"Received image. {self.image_counter}")
             np_image = self.cv_bridge.imgmsg_to_cv2(image_msg, 'rgb8')
             pil_image = PIL.Image.fromarray(np_image)
             timestamp = time.perf_counter()
@@ -144,10 +159,16 @@ class CaptionerNode(Node):
         return caption
     
     def publish_caption(self, caption: str):
+
         caption_msg = String()
         caption_msg.data = caption
         self.caption_publisher.publish(caption_msg)
 
+    def publish_caption_pose(self, caption: bool):
+        
+        caption_pose_msg = Bool()
+        caption_pose_msg.data = True
+        self.caption_pose_publisher.publish(caption_pose_msg)
 
 def main(args=None):
     rclpy.init(args=args)
