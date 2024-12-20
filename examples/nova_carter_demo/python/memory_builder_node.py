@@ -1,5 +1,7 @@
 import rclpy
 import numpy as np
+import time
+from copy import deepcopy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from std_msgs.msg import String, Bool
@@ -17,15 +19,15 @@ class MemoryBuilderNode(Node):
         super().__init__("MemoryBuilderNode")
 
         self.declare_parameter("db_collection", "test_collection")
-        self.declare_parameter("db_ip", "127.0.0.1")
+        # self.declare_parameter("db_ip", "127.0.0.1")
+        self.declare_parameter("db_ip", "172.17.12.82")
 
         self.declare_parameter("pose_topic", "/amcl_pose")
         self.declare_parameter("caption_topic", "/caption")
         self.declare_parameter("caption_pose_topic", "/caption_pose")
 
         self.pose_subscriber = self.create_subscription(
-            # PoseWithCovarianceStamped,
-            String,
+            PoseWithCovarianceStamped,
             self.get_parameter("pose_topic").value,
             self.pose_callback,
             1
@@ -61,7 +63,6 @@ class MemoryBuilderNode(Node):
         self.pose_msg = msg
 
     def caption_callback(self, msg: String):
-
         if self.caption_pose_msg is not None:
 
             position, angle, pose_time = format_pose_msg(self.caption_pose_msg)
@@ -80,7 +81,8 @@ class MemoryBuilderNode(Node):
     def caption_pose_callback(self, msg: Bool):
 
         if self.pose_msg is not None and msg.data:
-            self.caption_pose_msg = self.pose_msg
+            self.caption_pose_msg = deepcopy(self.pose_msg)
+            self.caption_pose_msg.header.stamp = self.get_clock().now().to_msg()
 
 def main(args=None):
     rclpy.init(args=args)

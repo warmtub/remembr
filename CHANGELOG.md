@@ -5,9 +5,15 @@
 ### Add
 ### Change
 
-## [0.1.0] - 2024-12-28
+## [0.1.1] - 2024-12-20
+### Added
+### Change
+- test on amr
+- fix caption pose timestamp
+
+## [0.1.0] - 2024-12-18
 ### Added
 - webcam and fake pose node
-- fix common_utils bug
 - add caption pose publisher in caption node
 ### Change
+- fix common_utils bug

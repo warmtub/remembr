@@ -23,17 +23,17 @@ class CaptionerNode(Node):
         self.declare_parameter("image_topic", "/webcam_image")
         self.declare_parameter("caption_topic", "/caption")
         self.declare_parameter("caption_pose_topic", "/caption_pose")
-        # self.declare_parameter(
-        #     "prompt",
-        #     "<video> Please describe in detail what you see in the few seconds of " + \
-        #     "the video. Specifically focus on the people, objects, environmental " + \
-        #     "features, events/ectivities, signs, use of each room, and other interesting details. " + \
-        #     "Think step by step about these details and be very specific."
-        # )
         self.declare_parameter(
             "prompt",
-            "<video> This video shows a clock. Please describe what time is it."
+            "<video> Please describe in detail what you see in the few seconds of " + \
+            "the video. Specifically focus on the people, objects, environmental " + \
+            "features, events/ectivities, signs, use of each room, and other interesting details. " + \
+            "Think step by step about these details and be very specific."
         )
+        # self.declare_parameter(
+        #     "prompt",
+        #     "<video> This video shows a clock. Please describe what time is it."
+        # )
         self.declare_parameter("use_every_nth_image", 15)
         self.declare_parameter("caption_image_count", 6)
         self.declare_parameter("caption_interval", 3.0)

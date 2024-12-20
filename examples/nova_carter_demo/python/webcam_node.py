@@ -21,21 +21,20 @@ class MinimalPublisher(Node):
         timer_period = 1/self.video_cap.get(cv2.CAP_PROP_FPS)  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.bridge = CvBridge()
+        self.count = 0
        
     def timer_callback(self):
-
+        
         ret, cv2_im = self.video_cap.read()
+        # if self.count == 5:
+        #     cv2.imwrite("test.jpg", cv2_im)
+        #     self.count = 0
+        # else: self.count += 1
+
         if ret:
             self.publisher_.publish(self.bridge.cv2_to_imgmsg(np.array(cv2_im), "bgr8"))
             self.get_logger().info('Publishing an image')
-
-    def video_loop(self):
-       
-        while(self.video_cap.isOpened()):
-            ret, cv2_im = self.video_cap.read()
-            if not ret: break
-            self.cv_image = cv2_im
-
+            
 def main(args=None):
 
     rclpy.init(args=args)
