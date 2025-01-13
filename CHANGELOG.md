@@ -1,7 +1,7 @@
 # Changelog
 
 
-## [0.1.1] - 2025-01-08
+## [0.1.2] - 2025-01-08
 ### Add
 - terminate topic
 - remembr_status topic
@@ -12,8 +12,6 @@
 - split AIMessage
 - new query interrupt previous one
 - break infinite generate loop after three retries
-
-
 
 ## [0.1.1] - 2024-12-20
 ### Added
