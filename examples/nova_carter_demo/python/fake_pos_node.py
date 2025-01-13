@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from cv_bridge import CvBridge
+# from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 import cv2
 import numpy as np
@@ -34,14 +34,24 @@ class MinimalPublisher(Node):
         pose_msg.header.frame_id = "map"  # Frame of reference
 
         # Fill the pose (position and orientation)
-        pose_msg.pose.pose.position.x = float(self.i)
-        pose_msg.pose.pose.position.y = float(self.i)
-        pose_msg.pose.pose.position.z = float(self.i)
+        # pose_msg.pose.pose.position.x = float(self.i)
+        # pose_msg.pose.pose.position.y = float(self.i)
+        # pose_msg.pose.pose.position.z = float(self.i)
+        # pose_msg.pose.pose.position.x = 9.850
+        # pose_msg.pose.pose.position.y = 2.380
+        # pose_msg.pose.pose.position.x = 8.448
+        # pose_msg.pose.pose.position.y = 11.894
+        # pose_msg.pose.pose.position.x = 12.731
+        # pose_msg.pose.pose.position.y = 8.887
+        
+        pose_msg.pose.pose.position.x = 1.0
+        pose_msg.pose.pose.position.y = 1.0
+        pose_msg.pose.pose.position.z = 0.0
 
-        pose_msg.pose.pose.orientation.x = 0.707
-        pose_msg.pose.pose.orientation.y = 0.707
-        pose_msg.pose.pose.orientation.z = 0.0
-        pose_msg.pose.pose.orientation.w = 0.0  # Quaternion (identity rotation)
+        pose_msg.pose.pose.orientation.x = 0.0
+        pose_msg.pose.pose.orientation.y = 0.0
+        pose_msg.pose.pose.orientation.z = 0.707
+        pose_msg.pose.pose.orientation.w = 0.707  # Quaternion (identity rotation)
 
         string_msg = String()
         string_msg.data = time.strftime("%H:%M:%S", time.gmtime())
