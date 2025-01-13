@@ -150,7 +150,7 @@ class MilvusMemory(Memory):
             vector_field='text_embedding',
             text_field='caption',
         )
-        self.text_retriever = text_vector_db.as_retriever(search_kwargs={"k": 5})
+        self.text_retriever = text_vector_db.as_retriever(search_kwargs={"k": 3})
 
 
         self.position_vector_db = Milvus(

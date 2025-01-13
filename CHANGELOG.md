@@ -1,9 +1,19 @@
 # Changelog
 
 
-## [0.0.0] - 2025-01-01
+## [0.1.1] - 2025-01-08
 ### Add
+- terminate topic
+- remembr_status topic
+- goal_text topic
 ### Change
+- use (x, y, z) in prompt example
+- fix string input for retrieve_from_position
+- split AIMessage
+- new query interrupt previous one
+- break infinite generate loop after three retries
+
+
 
 ## [0.1.1] - 2024-12-20
 ### Added
