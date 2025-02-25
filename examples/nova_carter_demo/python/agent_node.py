@@ -1,6 +1,7 @@
 import rclpy
 import numpy as np
 import time
+import traceback
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped 
 from geometry_msgs.msg import PoseWithCovarianceStamped
@@ -30,9 +31,10 @@ class AgentNode(Node):
         self.declare_parameter("query_topic", "/speech")
         self.declare_parameter("pose_topic", "/amcl_pose")
         self.declare_parameter("goal_pose_topic", "/goal_pose")
-        self.declare_parameter("goal_text_topic", "/goal_text")
-        self.declare_parameter("terminate_topic", "/terminate")
+        self.declare_parameter("goal_text_topic", "/goal_response")
+        self.declare_parameter("terminate_topic", "/terminate_remembr")
         self.declare_parameter("status_topic", "/remembr_status")
+        self.declare_parameter("video_name_topic", "/video_name")
 
         # look for "robot" keyword
         self.query_filter = lambda text: "robot" in text.lower()
@@ -57,6 +59,13 @@ class AgentNode(Node):
             PoseWithCovarianceStamped,
             self.get_parameter("pose_topic").value,
             self.pose_callback,
+            10
+        )
+
+        self.video_subscriber = self.create_subscription(
+            String,
+            self.get_parameter("video_name_topic").value,
+            self.change_db_callback,
             10
         )
 
@@ -94,9 +103,9 @@ class AgentNode(Node):
 
     def query_callback(self, msg: String):
         
-        if not self.query_filter(msg.data):
-            logger.info(f"Skipping query {msg.data} because it does not have keyword")
-            return 
+        # if not self.query_filter(msg.data):
+        #     logger.info(f"Skipping query {msg.data} because it does not have keyword")
+        #     return 
 
         try:
             query = msg.data
@@ -179,15 +188,22 @@ class AgentNode(Node):
                     goal_pose.pose.orientation.w = float(quat[3])
                     # Publish the result
                     self.goal_pose_publisher.publish(goal_pose)
-                    goal_text = String()
-                    goal_text.data = response.text
-                    self.goal_text_publisher.publish(goal_text)
+                goal_text = String()
+                goal_text.data = response.text
+                self.goal_text_publisher.publish(goal_text)
 
-                self.logger.info("Query executed: ")
-                self.logger.info("\tresoning: " + response.answer_reasoning)
-                self.logger.info("\tText: " + response.text)
-                self.logger.info(f"\tPosition: {response.position}")
-                self.logger.info(f"\tOrientation: {response.orientation}")
+                # self.logger.info("Query executed: ")
+                # self.logger.info("\tresoning: " + response.answer_reasoning)
+                # self.logger.info("\tText: " + response.text)
+                # self.logger.info("\tTarget: " + response.target)
+                # self.logger.info(f"\tPosition: {response.position}")
+                # self.logger.info(f"\tOrientation: {response.orientation}")
+                print("Query executed: ")
+                print("\tresoning: " + response.answer_reasoning)
+                print("\tText: " + response.text)
+                print("\tKeypoint: " + response.keypoint)
+                print(f"\tPosition: {response.position}")
+                print(f"\tOrientation: {response.orientation}")
         
         except:
             print("FAILED. Returning")
@@ -217,6 +233,17 @@ class AgentNode(Node):
 
     def pose_callback(self, msg: PoseWithCovarianceStamped):
         self.last_pose = msg
+
+    def change_db_callback(self, msg: String):
+        print(f"change_db_callback")
+        db_name = f'hm3d_{msg.data.replace("-", "_").replace("hm3d_", "")}'
+        print(f"switch to {db_name}")
+
+        self.memory = MilvusMemory(
+            db_name,
+            self.get_parameter("db_ip").value
+        )
+        self.agent.set_memory(self.memory)
 
 
 def main(args=None):

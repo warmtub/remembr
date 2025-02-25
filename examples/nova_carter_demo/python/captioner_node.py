@@ -27,7 +27,7 @@ class CaptionerNode(Node):
             "prompt",
             "<video> Please describe in detail what you see in the few seconds of " + \
             "the video. Specifically focus on the people, objects, environmental " + \
-            "features, events/ectivities, signs, use of each room, and other interesting details. " + \
+            "features, events/activities, signs, use of each room, and other interesting details. " + \
             "Think step by step about these details and be very specific."
         )
         # self.declare_parameter(

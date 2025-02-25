@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.3] - 2025-02-24
+### Add
+- change video topic
+- position retreive from memory
+### Change
+- skip prompt keyword
 
 ## [0.1.2] - 2025-01-08
 ### Add

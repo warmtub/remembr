@@ -11,5 +11,5 @@ docker run \
     --device /dev/snd \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v $(pwd):/remembr \
-    -w /remembr \
+    -w /remembr/examples/nova_carter_demo \
     nova_carter_demo:x86

@@ -23,9 +23,10 @@ Your response should look like the following: (be careful about escaping quotes 
     "tool_input": {{{{
         "response": {{{{
                 "type_reasoning": "-input your reasoning in here for the type of question-", 
-                "type": "-input the type of answer that is expected based only on the question: position, binary, time, or text. Be sure to then fill in that selected category.",
+                "type": "-input the type of answer that is expected based only on the question: position, binary, time, or text. Be sure to then fill in that selected category.-",
                 "answer_reasoning": "-input your reasoning in here for the answer. If you do not know the answer, provide your best guess.-", 
                 "text": "--a text answer here. This should be as if you are responding to a user, so do not provide low-level details.--",
+                "keypoint": "-choose the most important memory during your reasoning. If you do not know the answer, leave this field blank."
                 "binary": "yes/no",
                 "position": "[x,y,z]", 
                 "orientation": "[euler_rotation]", 
@@ -53,6 +54,7 @@ Question: Where is the closest way to get upstairs?
                 "type": "position",
                 "answer_reasoning": "I see that there is an elevator located at (x1,y1,0) and the stairs are located near (x2,y2,0). Since I am closer to the elevator by calculating the distance, the elevator is the closest way to go upstairs.", 
                 "text": "The closest way to go upstairs is to take the elevator at (x1,y1,0)",
+                "keypoint": "At time=2025-01-01 01:00:00, the robot was at an average position of [x1, y1, 0].The robot saw the following: The video showcases a well-lit corridor with a modern design. On the left side, there is an elevator with sleek metallic doors. Flanking the elevator, there are potted plants neatly arranged on both sides, adding a touch of greenery to the space. The overall ambiance is clean and inviting.",
                 "binary": null,
                 "position": "[x1,y1,0.0]",
                 "orientation": "[a1]", 
@@ -76,6 +78,7 @@ Question: Can you take me to the green exit sign?
                 "type_reasoning": "The question is asking about where something is, so I should output a position.", 
                 "type": "position",
                 "answer_reasoning": "I have not seen a green exit sign, however, I have seen exits that might be helpful. I will select one of those as my answer",
+                "keypoint": "At time=2025-01-01 00:00:00, the robot was at an average position of [x3, y3, 0].The robot saw the following: The video shows the end of the corridor, there is a door with a clear "Exit" sign displayed on it. The door stands as a noticeable focal point, guiding people toward the designated exit..",
                 "binary": null,
                 "position": "[x3,y3,0.0]",
                 "orientation": "[a3]", 

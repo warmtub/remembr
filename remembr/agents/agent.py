@@ -6,6 +6,7 @@ class AgentOutput:
     type: str
     answer_reasoning: str
     text: str
+    keypoint: str
     binary: str
     position: list
     orientation: float
