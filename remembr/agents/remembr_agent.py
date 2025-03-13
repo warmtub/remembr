@@ -24,15 +24,14 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 
 
 import sys, os
+import time
 sys.path.append(sys.path[0] + '/..')
 
 
 from remembr.utils.util import file_to_string
 from remembr.tools.tools import *
 from remembr.tools.functions_wrapper import FunctionsWrapper
-
 from remembr.memory.memory import Memory
-
 from remembr.agents.agent import Agent, AgentOutput
 
 
@@ -80,6 +79,7 @@ def should_continue(state: AgentState):
     
 
 def try_except_continue(state, func):
+    retry_count = 0
     while True:
         try:
             ret = func(state)
@@ -89,11 +89,14 @@ def try_except_continue(state, func):
             print("Here is my error")
             print(e)
             traceback.print_exception(*sys.exc_info())
-            continue
+            # continue
+        retry_count += 1
+        if retry_count > 3: break
+        # print(f"retry count {count}")
 
 class ReMEmbRAgent(Agent):
 
-    def __init__(self, llm_type='gpt-4o', num_ctx=8192, temperature=0):
+    def __init__(self, llm_type='gpt-4o', num_ctx=8192, temperature=0.0):
 
         # Wrapper that handles everything
         llm = self.llm_selector(llm_type, temperature, num_ctx)
@@ -111,12 +114,20 @@ class ReMEmbRAgent(Agent):
         top_level_path = str(os.path.dirname(__file__)) + '/../'
         self.agent_prompt = file_to_string(top_level_path+'prompts/agent_system_prompt.txt')
         self.generate_prompt = file_to_string(top_level_path+'prompts/generate_system_prompt.txt')
+        self.agent_first_prompt = file_to_string(top_level_path+'prompts/agent_system_prompt_first.txt')
         self.agent_gen_only_prompt = file_to_string(top_level_path+'prompts/agent_gen_system_prompt.txt')
 
         self.previous_tool_requests = "These are the tools I have previously used so far: \n"
         self.agent_call_count = 0
 
         self.chat_history = ChatMessageHistory()
+
+        self.is_terminate = False
+
+    def should_terminate(self, _):
+        if self.is_terminate:
+            return "terminate"
+        return "continue"
 
 
     def llm_selector(self, llm_type, temperature, num_ctx):
@@ -149,7 +160,6 @@ class ReMEmbRAgent(Agent):
         self.build_graph()
 
 
-
     def create_tools(self, memory):
 
         template = "At time={{time}} seconds, the robot was at an average position of {{position}} with an average orientation of {{theta}} radians. "
@@ -175,7 +185,7 @@ class ReMEmbRAgent(Agent):
             x: tuple = Field(description="The query that will be searched by finding the nearest memories at this (x,y,z) position.\
                                 The query must be an (x,y,z) array with floating point values \
                                 Based on the question and your context, decide what position to search for in the database. \
-                                This query argument should be a position such as (0.5, 0.2, 0.1). They should NOT be a string. \
+                                This query argument should be a position which is a 3D coordinate. They should NOT be a string. \
                                 The query will then search your memories for you.")
         # position-based tool
         self.position_retriever_tool = StructuredTool.from_function(
@@ -190,7 +200,7 @@ class ReMEmbRAgent(Agent):
             x: str = Field(description="The query that will be searched by finding the nearest memories at a specific time in H:M:S format.\
                                 The query must be a string containing only time. \
                                 Based on the question and your context, decide what time to search for in the database. \
-                                This query argument should be an HMS time such as 08:02:03 with leading zeros. \
+                                This query argument should be an HMS time such as HH:MM:SS with leading zeros. \
                                 The query will then search your memories for you.")
 
         # position-based tool
@@ -218,13 +228,18 @@ class ReMEmbRAgent(Agent):
         Returns:
             dict: The updated state with the agent response appended to messages
         """
+        start = time.time()
+        print(f"agent state {self.agent_call_count}")
         messages = state["messages"]
 
         model = self.chat
 
 
         # limit to 5 tool calls.
-        if self.agent_call_count < 3:
+        if self.agent_call_count <= 1:
+            model = model.bind_tools(tools=[convert_to_openai_function(self.retriever_tool)])
+            prompt = self.agent_first_prompt
+        elif self.agent_call_count < 3:
             model = model.bind_tools(tools=self.tool_definitions)
             prompt = self.agent_prompt
         else:
@@ -249,10 +264,13 @@ class ReMEmbRAgent(Agent):
 
         # Convert all ToolMessages into AI Messages since Ollama cann't handle ToolMessage
         if ('gpt-4' not in self.llm_type) and ('nim' not in self.llm_type):
-            for i in range(len(messages)):
-                if type(messages[i]) == ToolMessage:
-                    messages[i] = AIMessage(id=messages[i].id, content=messages[i].content) # ignore tool_call_id
-
+            for message_idx in range(len(messages)):
+                if type(messages[message_idx]) == ToolMessage:
+                    for message in messages[message_idx].content.split("At time="):
+                        if not message: continue
+                        messages.insert(message_idx, AIMessage(id=messages[message_idx].id, content="At time="+message))
+                        message_idx+=1
+                    messages.pop(message_idx)
 
         response = model.invoke({"question": question, "chat_history": messages[:]})
 
@@ -261,12 +279,17 @@ class ReMEmbRAgent(Agent):
                 if tool_call['name'] != "__conversational_response":
                     args = re.sub("\{.*?\}", "", str(tool_call['args'])) # remove curly braces
                     self.previous_tool_requests += f"I previously used the {tool_call['name']} tool with the arguments: {args}.\n"
+                
+                # check retrieve from pos is valid pos
+                if tool_call['name'] == "retrieve_from_position":
+                    if type(tool_call['args']['x']) == str:
+                        tool_call['args']['x'] = eval(tool_call['args']['x'])
+
 
         self.agent_call_count += 1
-
+        print(f"agent use {time.time()-start}")
 
         return {"messages": [response]}
-
 
     def generate(self, state):
         """
@@ -278,7 +301,13 @@ class ReMEmbRAgent(Agent):
         Returns:
             dict: The updated state with re-phrased question
         """
+        start = time.time()
+        print("generate state")
         messages = state["messages"]
+        prefix = ""
+        for message in messages:
+            if type(message) == AIMessage and message.tool_calls: prefix+="**"
+            print(prefix, type(message), message)
         question = messages[0].content \
                 + "\n Please responsed in the desired format."
         last_message = messages[-1]
@@ -324,18 +353,29 @@ class ReMEmbRAgent(Agent):
             for key in keys_to_check_for:
                 if key not in parsed:
                     raise ValueError("Missing all the required keys during generate. Retrying...")
+        except:
+            raise ValueError("Generate call failed. Retrying...")
                 
+        try:
             if type(parsed['position']) == str:
                 parsed['position'] = eval(parsed['position'])
             
+            if type(parsed['position']) != list:
+                raise ValueError(f"Type of position was incorrect. {parsed['position']}. Retrying...")
+            
             if (parsed['position'] is not None) and len(parsed['position']) != 3:
                 raise ValueError(f"Shape of position was incorrect. {parsed['position']}. Retrying...")
-
         except:
-            raise ValueError("Generate call failed. Retrying...")
+            # TODO handle this in state machine
+            # raise ValueError("Position parsing failled", parsed['position'])
+            print("Position parsing failled", parsed['position'])
+            parsed['position'] = [None, None, None]
 
         self.previous_tool_requests = "These are the tools I have previously used so far: \n"
         self.agent_call_count = 0
+
+        print(f"generate use {time.time()-start}")
+        
         return {"messages": [str(parsed)]}
 
 
@@ -379,7 +419,15 @@ class ReMEmbRAgent(Agent):
         )
 
 
-        workflow.add_edge('action', 'agent')
+        # workflow.add_edge('action', 'agent')
+        workflow.add_conditional_edges(
+            "action",
+            self.should_terminate,
+            {
+                "terminate": END,
+                "continue": "agent",
+            }
+        )
 
         workflow.add_edge("generate", END)
 
@@ -387,14 +435,20 @@ class ReMEmbRAgent(Agent):
         self.graph = workflow.compile()
 
 
-    def query(self, question: str):
+    def query(self, question: str, position: list, time: float):
+        self.is_terminate = False
+        self.agent_call_count = 0
 
+        if position and time:
+            question +=  f"\nYou are currently located at {position} and the time is {time}."
+        print("question: ", question, self.agent_call_count)
         inputs = { "messages": [
                                 (("user", question)),
             ]
         }
 
         out = self.graph.invoke(inputs)
+        if self.is_terminate: return
         response = out['messages'][-1]
         response = ''.join(response.content.splitlines())
 
@@ -409,6 +463,9 @@ class ReMEmbRAgent(Agent):
 
         return response
 
+    def terminate(self):
+        self.is_terminate = True
+ 
 if __name__ == "__main__":
 
     from memory.milvus_memory import MilvusMemory

@@ -1,5 +1,6 @@
 import rclpy
 import numpy as np
+from copy import deepcopy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from std_msgs.msg import String, Bool
@@ -87,7 +88,8 @@ class MemoryBuilderNode(Node):
     def caption_pose_callback(self, msg: Bool):
 
         if self.pose_msg is not None and msg.data:
-            self.caption_pose_msg = self.pose_msg
+            self.caption_pose_msg = deepcopy(self.pose_msg)
+            self.caption_pose_msg.header.stamp = self.get_clock().now().to_msg()
 
     def change_db_callback(self, msg: String):
         db_name = f'hm3d_{msg.data.replace("-", "_").replace("hm3d_", "")}'

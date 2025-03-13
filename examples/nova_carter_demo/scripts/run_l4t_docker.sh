@@ -7,7 +7,7 @@
 
 docker run \
     -it \
-    --name nova_carter_demo_v2 \
+    --name nova_carter_demo \
     --device /dev/snd \
     --network host \
     --runtime nvidia \

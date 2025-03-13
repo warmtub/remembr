@@ -4,6 +4,7 @@ import inspect
 @dataclass
 class AgentOutput:
     type: str
+    answer_reasoning: str
     text: str
     binary: str
     position: list
@@ -12,9 +13,9 @@ class AgentOutput:
     time: float
 
     @classmethod
-    def from_dict(cls, dict_input):      
+    def from_dict(cls, dict_input):
         return cls(**{
-            k: v for k, v in dict_input.items() 
+            k: v for k, v in dict_input.items()
             if k in inspect.signature(cls).parameters
         })
 

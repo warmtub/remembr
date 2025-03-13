@@ -10,6 +10,6 @@ docker run \
     --shm-size 14G \
     --device /dev/snd \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
-    -v $(pwd):/nova_carter_demo \
-    -w /nova_carter_demo \
+    -v $(pwd):/remembr \
+    -w /remembr \
     nova_carter_demo:x86
