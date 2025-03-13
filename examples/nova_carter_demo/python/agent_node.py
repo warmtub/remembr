@@ -24,7 +24,6 @@ class AgentNode(Node):
         # self.declare_parameter("llm_type", "command-r")
         # self.declare_parameter("llm_type", "codestral")
         self.declare_parameter("llm_type", "llama3.1:8b")
-        # self.declare_parameter("llm_type", "llama3.3")
         self.declare_parameter("db_collection", "test_collection")
         self.declare_parameter("db_ip", "127.0.0.1")
         # self.declare_parameter("db_ip", "172.17.12.82")
