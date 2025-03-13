@@ -18,7 +18,7 @@ def format_pose_msg(msg: PoseWithCovarianceStamped):
     ])
 
     euler_rot_z = R.from_quat(quat).as_euler('xyz')[-1] # take z rotation
-    position[2] = euler_rot_z
+    # position[2] = euler_rot_z
 
     stamp = msg.header.stamp
     converted_time = float(str(stamp.sec) + '.' + str(stamp.nanosec))

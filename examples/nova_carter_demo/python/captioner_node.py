@@ -23,17 +23,19 @@ class CaptionerNode(Node):
         self.declare_parameter("image_topic", "/webcam_image")
         self.declare_parameter("caption_topic", "/caption")
         self.declare_parameter("caption_pose_topic", "/caption_pose")
-        # self.declare_parameter(
-        #     "prompt",
-        #     "<video> Please describe in detail what you see in the few seconds of " + \
-        #     "the video. Specifically focus on the people, objects, environmental " + \
-        #     "features, events/ectivities, signs, use of each room, and other interesting details. " + \
-        #     "Think step by step about these details and be very specific."
-        # )
         self.declare_parameter(
             "prompt",
-            "<video> This video shows a clock. Please describe what time is it."
+            "<video> Please describe in detail what you see in the few seconds of " + \
+            "the video. Specifically focus on the people, objects, furniture, environmental " + \
+            "features, events/ectivities, signs, use of each room, and other interesting details. " + \
+            "Think step by step about these details and be very specific."
         )
+        # self.declare_parameter(
+        #     "prompt",
+        #     "<video> This video shows a clock. Please describe what time is it."
+        # )
+        self.declare_parameter("video_name_topic", "/video_name")
+
         self.declare_parameter("use_every_nth_image", 15)
         self.declare_parameter("caption_image_count", 6)
         self.declare_parameter("caption_interval", 3.0)
@@ -55,6 +57,13 @@ class CaptionerNode(Node):
             Bool, 
             self.get_parameter("caption_pose_topic").value,
             1
+        )
+        
+        self.caption_subscriber = self.create_subscription(
+            String,
+            self.get_parameter("video_name_topic").value,
+            self.clean_buffer_callback,
+            10
         )
 
         self.debug = False
@@ -109,6 +118,7 @@ class CaptionerNode(Node):
                 self.logger.info("Skipped image captioning for current time window.  No images available in buffer.")
             else:
                 self.publish_caption_pose(True)
+                self.logger.info(f"Start caption.")
                 caption = self.caption_images(images)
                 self.logger.info(f"Generated caption using {len(images)} images.")
                 self.publish_caption(caption)
@@ -149,6 +159,7 @@ class CaptionerNode(Node):
             inputs=embedding,
             kv_cache=self.chat_history.kv_cache,
             min_new_tokens = 50,
+            max_new_tokens = 200,
             streaming = False, 
             do_sample = True,
         )
@@ -169,6 +180,10 @@ class CaptionerNode(Node):
         caption_pose_msg = Bool()
         caption_pose_msg.data = True
         self.caption_pose_publisher.publish(caption_pose_msg)
+
+    def clean_buffer_callback(self, msg: String):
+        self.image_buffer = []
+        self.image_counter = 0
 
 def main(args=None):
     rclpy.init(args=args)

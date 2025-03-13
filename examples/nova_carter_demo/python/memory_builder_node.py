@@ -22,10 +22,10 @@ class MemoryBuilderNode(Node):
         self.declare_parameter("pose_topic", "/amcl_pose")
         self.declare_parameter("caption_topic", "/caption")
         self.declare_parameter("caption_pose_topic", "/caption_pose")
+        self.declare_parameter("video_name_topic", "/video_name")
 
         self.pose_subscriber = self.create_subscription(
-            # PoseWithCovarianceStamped,
-            String,
+            PoseWithCovarianceStamped,
             self.get_parameter("pose_topic").value,
             self.pose_callback,
             1
@@ -43,6 +43,13 @@ class MemoryBuilderNode(Node):
             self.get_parameter("caption_pose_topic").value,
             self.caption_pose_callback,
             1
+        )
+        
+        self.video_subscriber = self.create_subscription(
+            String,
+            self.get_parameter("video_name_topic").value,
+            self.change_db_callback,
+            10
         )
         
         self.memory = MilvusMemory(
@@ -81,6 +88,20 @@ class MemoryBuilderNode(Node):
 
         if self.pose_msg is not None and msg.data:
             self.caption_pose_msg = self.pose_msg
+
+    def change_db_callback(self, msg: String):
+        db_name = f'hm3d_{msg.data.replace("-", "_").replace("hm3d_", "")}'
+        print(f"switch to {db_name}")
+
+        # self.memory = MilvusMemory(
+        #     db_name,
+        #     self.get_parameter("db_ip").value
+        # )
+        self.memory = MilvusMemory(
+            "test_collection",
+            self.get_parameter("db_ip").value
+        )
+        self.memory.reset()
 
 def main(args=None):
     rclpy.init(args=args)
