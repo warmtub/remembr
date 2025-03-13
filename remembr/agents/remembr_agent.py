@@ -229,7 +229,6 @@ class ReMEmbRAgent(Agent):
             dict: The updated state with the agent response appended to messages
         """
         start = time.time()
-        print(f"agent state {self.agent_call_count}")
         messages = state["messages"]
 
         model = self.chat
@@ -339,6 +338,7 @@ class ReMEmbRAgent(Agent):
 
         # let us parse and check the output is a dictionary. raise error otherwise
         response = ''.join(response.content.splitlines())
+        print("response: ", response)
 
         try:
             if '```json' not in response:
@@ -346,16 +346,37 @@ class ReMEmbRAgent(Agent):
                 parsed = eval(response) 
             else:
                 parsed = parse_json(response)
+        except:
+            parsed = {
+                'type_reasoning': '',
+                'type': '',
+                'answer_reasoning': '',
+                'text': response,
+                'keypoint': '',
+                'binary': None,
+                'position': None,
+                'orientation': None,
+                'time': None,
+                'duration': None}
+            # raise ValueError("Generate call failed. Retrying...")
 
+        try:
+            if "text" not in parsed:
+                parsed["text"] = parsed["answer_reasoning"]
+        except:
+            parsed["text"] = parsed["answer_reasoning"] = ''
+
+        try:
             # then check it has all the required keys
             keys_to_check_for = ["time", "text", "binary", "position", "duration"]
 
             for key in keys_to_check_for:
                 if key not in parsed:
+                    print("Missing ", key)
                     raise ValueError("Missing all the required keys during generate. Retrying...")
         except:
             raise ValueError("Generate call failed. Retrying...")
-                
+
         try:
             if type(parsed['position']) == str:
                 parsed['position'] = eval(parsed['position'])
@@ -371,6 +392,21 @@ class ReMEmbRAgent(Agent):
             print("Position parsing failled", parsed['position'])
             parsed['position'] = [None, None, None]
 
+        try:
+            if parsed['keypoint']:
+                for message in messages:
+                    if parsed['keypoint'] in message.content:
+                        parsed['keypoint'] = message.content
+                        break
+            if parsed['keypoint']:
+                match = re.search(r"\[(-?\d+\.\d+,\s*-?\d+\.\d+,\s*-?\d+\.\d+)\]", parsed['keypoint'])
+                if match:
+                    position = match.group(1)  # Extract matched position
+                    position = [float(num) for num in position.split(", ")]  # Convert to a list of floats
+                    parsed['position'] = position
+        except:
+            pass
+                
         self.previous_tool_requests = "These are the tools I have previously used so far: \n"
         self.agent_call_count = 0
 
@@ -441,7 +477,7 @@ class ReMEmbRAgent(Agent):
 
         if position and time:
             question +=  f"\nYou are currently located at {position} and the time is {time}."
-        print("question: ", question, self.agent_call_count)
+        print("question: ", question)
         inputs = { "messages": [
                                 (("user", question)),
             ]

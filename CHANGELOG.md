@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.3] - 2025-03-13
+### Add
+- improve caption promte and max token size
+- evaluation topic in memory build phase
+- change video topic
+- position retreive from memory
+- evaluation scripts
+- position retrieval
+
+### Change
+- skip prompt keyword
 
 ## [0.1.2] - 2025-01-08
 ### Add

@@ -46,27 +46,30 @@ class MilvusWrapper:
         schema = CollectionSchema(fields=fields, description='text image search')
         collection = Collection(name=collection_name, schema=schema)
 
-        # create IVF_FLAT index for collection.
-        index_params = {
-            'metric_type':'L2',
-            'index_type':"IVF_FLAT",
-            'params':{"nlist":1024}
-        }
-        collection.create_index(field_name="text_embedding", index_params=index_params)
+        try:
+            # create IVF_FLAT index for collection.
+            index_params = {
+                'metric_type':'L2',
+                'index_type':"IVF_FLAT",
+                'params':{"nlist":1024}
+            }
+            collection.create_index(field_name="text_embedding", index_params=index_params)
+ 
+            index_params = {
+                'metric_type':'L2',
+                'index_type':"IVF_FLAT",
+                'params':{"nlist":2}
+            }
+            collection.create_index(field_name="position", index_params=index_params)
 
-        index_params = {
-            'metric_type':'L2',
-            'index_type':"IVF_FLAT",
-            'params':{"nlist":2}
-        }
-        collection.create_index(field_name="position", index_params=index_params)
-
-        index_params = {
-            'metric_type':'L2',
-            'index_type':"IVF_FLAT",
-            'params':{"nlist":2}
-        }
-        collection.create_index(field_name="time", index_params=index_params)
+            index_params = {
+                'metric_type':'L2',
+                'index_type':"IVF_FLAT",
+                'params':{"nlist":2}
+            }
+            collection.create_index(field_name="time", index_params=index_params)
+        except:
+            pass
 
         return collection
     

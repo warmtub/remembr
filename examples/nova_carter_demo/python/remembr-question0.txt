@@ -1,0 +1,7 @@
+Where is the closest place to sit?,7:57:53,position,,[position],spatial
+Where is the yellow police call pole?,7:59:49,position,,[position],spatial
+Where is the statue in front of the Bill and Melinda Gates Computer Science building?,7:55:58,position,,[position],spatial
+Where is the nearest recycling bin?,7:58:04,position,,[position],spatial
+Where did you see the sculpture with the hanging boats?,8:00:50,position,,[position],spatial
+Where are the closest elevators?,7:58:33,position,,[position],spatial
+Where did you see a red fire hydrant?,8:02:45,position,,[position],spatial
