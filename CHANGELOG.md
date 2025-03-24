@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.4] - 2025-03-24
+### Add
+- web recorder
+### Change
+- refine asr_node to asr_node_lite, do asr only (audio bytes to string)
+
 ## [0.1.3] - 2025-03-13
 ### Add
 - improve caption promte and max token size
@@ -7,8 +13,6 @@
 - change video topic
 - position retreive from memory
 - evaluation scripts
-- position retrieval
-
 ### Change
 - skip prompt keyword
 
@@ -25,7 +29,6 @@
 - break infinite generate loop after three retries
 
 ## [0.1.1] - 2024-12-20
-### Added
 ### Change
 - test on amr
 - fix caption pose timestamp

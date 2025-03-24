@@ -23,13 +23,11 @@
 import numpy as np
 import time
 import pyaudio
-import socketio
 # import eventlet
 import asyncio
 import uvicorn
 import starlette
 # from aiohttp import web
-import socketio
 import threading
 # from multiprocessing import Process, Queue, Event
 from threading import Thread, Event
@@ -52,9 +50,9 @@ def find_respeaker_audio_device_index():
     for i in range(num_devices):
 
         device_info = p.get_device_info_by_host_api_device_index(0, i)
-        
-        if "respeaker" in device_info.get("name").lower():
-
+        # if "respeaker" in device_info.get("name").lower():
+        # if "usb pnp sound" in device_info.get("name").lower():
+        if "usb audio device:" in device_info.get("name").lower():
             device_index = i
 
     return device_index
@@ -73,7 +71,7 @@ def get_respeaker_audio_stream(
 
     if device_index is None:
         raise RuntimeError("Could not find Respeaker device.")
-    
+   
     p = pyaudio.PyAudio()
 
     stream = p.open(
@@ -138,6 +136,9 @@ class Microphone(Thread):
         self.bitwidth = bitwidth
 
     def run(self):
+        while True:
+            time.sleep(100)
+
         with get_respeaker_audio_stream(sample_rate=self.sample_rate, 
                                         device_index=self.device_index, 
                                         channels=self.num_channels, bitwidth=self.bitwidth) as stream:
@@ -263,7 +264,7 @@ class ASR(Thread):
         self.asr_callback = asr_callback
 
     def run(self):
-        
+        # self.backend = "whisper"
         if self.backend == "whisper_trt":
             from whisper_trt import load_trt_model
             model = load_trt_model(self.model, path=self.model_path)
@@ -285,17 +286,28 @@ class ASR(Thread):
         # warmup
         model.transcribe(np.zeros(1536, dtype=np.float32))
 
+        print("[INFO] Waiting audio")
         if self.ready_flag is not None:
             self.ready_flag.set()
 
+        # print("[INFO] Waiting B")
         while True:
 
-            speech_segment = self.input_queue.get()
+            # speech_segment = self.input_queue.get()
 
-            audio = np.concatenate([chunk.audio_numpy_normalized[self.use_channel] for chunk in speech_segment.chunks])
-
-            text = model.transcribe(audio)['text']
-
+            # audio = np.concatenate([chunk.audio_numpy_normalized[self.use_channel] for chunk in speech_segment.chunks])
+            file_wav = "/remembr/test.wav"
+            file_run = "/remembr/run.wav"
+            import os
+            if not os.path.isfile(file_wav):
+                time.sleep(0.3)
+                # print("[INFO] Waiting D")
+                continue
+            
+            print("[INFO] Processing")
+            os.rename(file_wav, file_run)
+            text = model.transcribe(file_run)['text']
+            print("[INFO] Waiting audio")
 
             if self.asr_callback is not None:
                 self.asr_callback(text)
@@ -328,23 +340,23 @@ class ASRPipeline:
         if cache_dir is not None:
             set_cache_dir(cache_dir)
 
-        self.mic = Microphone(
-            self.audio_chunks,
-            device_index=mic_device_index,
-            use_channel=mic_channel_for_asr,
-            num_channels=mic_num_channels,
-            sample_rate=mic_sample_rate,
-            bitwidth=mic_bitwidth
-        )
+        # self.mic = Microphone(
+        #     self.audio_chunks,
+        #     device_index=mic_device_index,
+        #     use_channel=mic_channel_for_asr,
+        #     num_channels=mic_num_channels,
+        #     sample_rate=mic_sample_rate,
+        #     bitwidth=mic_bitwidth
+        # )
 
-        self.vad = VAD(
-            self.audio_chunks, 
-            self.speech_segments, 
-            max_filter_window=vad_window, 
-            ready_flag=self.vad_ready, 
-            vad_start_callback=vad_start_callback,
-            vad_end_callback=vad_end_callback
-        )
+        # self.vad = VAD(
+        #     self.audio_chunks, 
+        #     self.speech_segments, 
+        #     max_filter_window=vad_window, 
+        #     ready_flag=self.vad_ready, 
+        #     vad_start_callback=vad_start_callback,
+        #     vad_end_callback=vad_end_callback
+        # )
 
         self.asr = ASR(
             model, 
@@ -356,18 +368,18 @@ class ASRPipeline:
 
     def start(self):
 
-        self.vad.start()
+        # self.vad.start()
         self.asr.start()
         
-        self.vad_ready.wait()
+        # self.vad_ready.wait()
         self.asr_ready.wait()
 
-        self.mic.start()
+        # self.mic.start()
 
     def join(self):
 
-        self.mic.join()
-        self.vad.join()
+        # self.mic.join()
+        # self.vad.join()
         self.asr.join()
 
 if __name__ == "__main__":

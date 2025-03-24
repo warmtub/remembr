@@ -10,15 +10,21 @@ class AsrNode(Node):
         super().__init__('AsrNode')
 
         self.declare_parameter("model", "small.en")
+        # self.declare_parameter("model", "tiny.en")
         self.declare_parameter("backend", "whisper_trt") 
+        # self.declare_parameter("backend", "whisper") 
 
         # TODO: remove placeholder default
         self.declare_parameter("cache_dir", "data")#rclpy.Parameter.Type.STRING)
         self.declare_parameter("vad_window", 5)
+        # self.declare_parameter("vad_window", 10)
 
         self.declare_parameter("mic_device_index", rclpy.Parameter.Type.INTEGER)
-        self.declare_parameter("mic_sample_rate", 16000)
-        self.declare_parameter("mic_channels", 6)
+        # self.declare_parameter("mic_sample_rate", 16000)
+        self.declare_parameter("mic_sample_rate", 44100)
+        # self.declare_parameter("mic_channels", 6)
+        # self.declare_parameter("mic_channels", 128)
+        self.declare_parameter("mic_channels", 1)
         self.declare_parameter("mic_bitwidth", 2)
         self.declare_parameter("mic_channel_for_asr", 0)
 
