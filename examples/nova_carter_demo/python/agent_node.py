@@ -158,6 +158,9 @@ class AgentNode(Node):
 
     def _query(self, query):
         try:
+            goal_text = String()
+            goal_text.data = ""
+            self.goal_text_publisher.publish(goal_text)
             position = angle = current_time = None
             if self.last_pose is not None:
                 position, angle, current_time = format_pose_msg(self.last_pose)
@@ -187,7 +190,6 @@ class AgentNode(Node):
                     goal_pose.pose.orientation.w = float(quat[3])
                     # Publish the result
                     self.goal_pose_publisher.publish(goal_pose)
-                goal_text = String()
                 goal_text.data = response.text
                 self.goal_text_publisher.publish(goal_text)
 
@@ -220,8 +222,9 @@ class AgentNode(Node):
     def terminate_callback(self, _):
         # TODO stop query
         self.agent.terminate()
-        self.query_thread.join()
         print("stop query thread")
+        if self.query_thread:
+            self.query_thread.join()
         
         if self.last_pose:
             goal_pose = PoseStamped()
